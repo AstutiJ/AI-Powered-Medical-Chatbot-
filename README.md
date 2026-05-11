@@ -1,4 +1,4 @@
-# MedAssist — AI-Powered Medical Chatbot
+# MedAssist: AI-Powered Medical Chatbot
 
 An intelligent medical assistant built with RAG (Retrieval-Augmented Generation) 
 that answers questions based on verified medical documents.
