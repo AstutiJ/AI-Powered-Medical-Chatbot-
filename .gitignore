@@ -1,0 +1,27 @@
+# Environment variables
+.env
+
+# Virtual environment
+cenv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Database file
+backend/medical_chatbot.db
+
+# Node modules
+frontend/node_modules/
+
+# React build
+frontend/build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PDF files
+data/
