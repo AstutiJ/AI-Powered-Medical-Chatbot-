@@ -1,6 +1,6 @@
 // api.js — All API calls in one place
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const getHeaders = () => ({
   "Content-Type": "application/json",
