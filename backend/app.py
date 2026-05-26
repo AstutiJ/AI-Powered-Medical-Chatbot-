@@ -1,4 +1,4 @@
-# app.py — Main Flask server with auth and chat history
+# app.py
 
 import os
 from flask import Flask, request, jsonify
@@ -21,59 +21,55 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, origins="*", supports_credentials=True)
 
-# Register auth routes
 app.register_blueprint(auth_bp, url_prefix="/auth")
 
-# Initialize database and chatbot on startup
+# Initialize database immediately
 print("Initializing database...")
 init_db()
+print("Database ready!")
 
-print("Initializing chatbot...")
-rag_chain = initialize_chatbot()
-print("Server ready!")
+# Chatbot loads lazily on first request
+rag_chain = None
 
-# ─── Health Check ─────────────────────────────────────────────
+def get_rag_chain():
+    global rag_chain
+    if rag_chain is None:
+        print("Initializing chatbot...")
+        rag_chain = initialize_chatbot()
+        print("Chatbot ready!")
+    return rag_chain
 
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Medical Chatbot API is running!"})
 
-# ─── Conversation Routes ──────────────────────────────────────
-
 @app.route("/conversations", methods=["GET"])
 @token_required
 def get_conversations(user_id):
-    """Get all conversations for logged in user"""
     conversations = get_user_conversations(user_id)
     return jsonify({"conversations": conversations})
 
 @app.route("/conversations", methods=["POST"])
 @token_required
 def new_conversation(user_id):
-    """Create a new conversation"""
     conv_id = create_conversation(user_id)
     return jsonify({"conversation_id": conv_id}), 201
 
 @app.route("/conversations/<int:conv_id>", methods=["GET"])
 @token_required
 def get_messages(user_id, conv_id):
-    """Get all messages in a conversation"""
     messages = get_conversation_messages(conv_id)
     return jsonify({"messages": messages})
 
 @app.route("/conversations/<int:conv_id>", methods=["DELETE"])
 @token_required
 def remove_conversation(user_id, conv_id):
-    """Delete a conversation"""
     delete_conversation(conv_id, user_id)
     return jsonify({"message": "Conversation deleted"})
-
-# ─── Chat Route ───────────────────────────────────────────────
 
 @app.route("/chat", methods=["POST"])
 @token_required
 def chat(user_id):
-    """Send a message and get AI response"""
     try:
         data = request.get_json()
         question = data.get("question", "").strip()
@@ -82,36 +78,30 @@ def chat(user_id):
         if not question:
             return jsonify({"error": "Question cannot be empty"}), 400
 
-        # Create new conversation if not provided
         if not conv_id:
             conv_id = create_conversation(user_id)
-            # Set title from first message
             update_conversation_title(conv_id, question)
 
-        # Get previous messages for context
         previous_messages = get_conversation_messages(conv_id)
         
-        # Build conversation history for context
         history = ""
         if previous_messages:
-            for msg in previous_messages[-6:]:  # Last 6 messages for context
+            for msg in previous_messages[-6:]:
                 role = "User" if msg["role"] == "user" else "Assistant"
                 history += f"{role}: {msg['content']}\n"
 
-        # Add history to question if exists
         full_question = question
         if history:
             full_question = f"""Previous conversation:
 {history}
 Current question: {question}"""
 
-        # Save user message
         save_message(conv_id, "user", question)
 
-        # Get answer from chatbot
-        answer = get_answer(rag_chain, full_question)
+        # Chatbot loads here on first request
+        chain = get_rag_chain()
+        answer = get_answer(chain, full_question)
 
-        # Save bot response
         save_message(conv_id, "bot", answer)
 
         return jsonify({
