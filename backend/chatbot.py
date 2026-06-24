@@ -1,11 +1,12 @@
 import os
 from dotenv import load_dotenv
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
+
 load_dotenv()
 
 SYSTEM_PROMPT = """
@@ -25,41 +26,42 @@ You must strictly follow these rules:
 Important Disclaimer (always include at the end of every response):
 "⚠️ Note: This is for informational purposes only and is not a substitute for professional medical advice. Please consult a qualified doctor for diagnosis and treatment."
 
-
 Context:
 {context}
 """
 
 def initialize_chatbot():
     print("Initializing chatbot...")
-    
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
+
+    # HuggingFace API based embeddings — no local model loading
+    embeddings = HuggingFaceEndpointEmbeddings(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
     )
-    
+
     vectorstore = PineconeVectorStore(
         index_name="medical-chatbot",
         embedding=embeddings
     )
-    
+
     retriever = vectorstore.as_retriever(
         search_kwargs={"k": 3}
     )
-    
+
     llm = ChatGroq(
         api_key=os.getenv("GROQ_API_KEY"),
         model_name="llama-3.3-70b-versatile",
         temperature=0.2
     )
-    
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", SYSTEM_PROMPT),
         ("human", "{input}")
     ])
-    
+
     question_answer_chain = create_stuff_documents_chain(llm, prompt)
     rag_chain = create_retrieval_chain(retriever, question_answer_chain)
-    
+
     print("Chatbot ready!")
     return rag_chain
 
@@ -69,10 +71,10 @@ def get_answer(rag_chain, question):
 
 if __name__ == "__main__":
     chatbot = initialize_chatbot()
-    
-    print("\n Medical Chatbot Ready!")
+
+    print("\nMedical Chatbot Ready!")
     print("Type 'exit' to quit\n")
-    
+
     while True:
         question = input("You: ")
         if question.lower() == "exit":
