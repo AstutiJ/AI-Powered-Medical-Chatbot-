@@ -10,6 +10,6 @@ flask==3.1.0
 flask-cors==5.0.1
 python-dotenv==1.0.1
 pypdf==5.1.0
-sentence-transformers==3.3.1
+huggingface-hub==0.36.2
 PyJWT==2.10.1
 gunicorn==23.0.0
