@@ -35,7 +35,7 @@ def store_in_pinecone(chunks):
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
-    pc = Pinecone(api_key=os.getenv("pcsk_3i31Cd_4T6iWus8c6kkC9LKto9E1RA3vPW1Khawja2SJNreACPiW58muK9ZQp1UUXt67gL"))
+    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
     print("Storing in Pinecone...")
     vectorstore = PineconeVectorStore.from_documents(
         documents=chunks,
