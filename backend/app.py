@@ -19,7 +19,15 @@ from chatbot import initialize_chatbot, get_answer
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins="*", supports_credentials=True)
+CORS(app,
+     origins=[
+         "https://ai-powered-medical-chatbot-seven.vercel.app",
+         "http://localhost:3000"
+     ],
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "DELETE", "OPTIONS"]
+)
 
 app.register_blueprint(auth_bp, url_prefix="/auth")
 
